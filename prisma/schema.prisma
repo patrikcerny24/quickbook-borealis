@@ -1,0 +1,72 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlserver"
+  url      = env("DB_URL")
+}
+
+model User {
+  id           Int      @id @default(autoincrement())
+  email        String   @unique
+  phone        String?
+  passwordHash String   @map("password_hash")
+  role         String   @default("customer") @map("role")
+  firstName    String   @map("first_name")
+  lastName     String   @map("last_name")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+  
+  ownedCompanies Company[] @relation("CompanyOwner")
+  bookings       Booking[] @relation("CustomerBooking")
+
+  @@map("users")
+}
+
+model Company {
+  id             Int     @id @default(autoincrement())
+  name           String
+  description    String?
+  headerImageUrl String? @map("header_image_url")
+  ownerId        Int     @map("owner_id")
+  address        String?
+  phone          String?
+  email          String?
+  businessHours  String? @map("business_hours") 
+  
+  serviceName        String  @map("service_name")               
+  serviceDescription String? @map("service_description")             
+  durationMinutes    Int     @map("duration_minutes")              
+  price              Decimal @db.Decimal(10, 2)                 
+  isActive           Boolean @default(true) @map("is_active")     
+  
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  owner    User      @relation("CompanyOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  bookings Booking[] @relation("CompanyBooking")
+
+  @@map("companies")
+}
+
+model Booking {
+  id            Int      @id @default(autoincrement())
+  customerId    Int      @map("customer_id")
+  companyId     Int      @map("company_id")
+  bookingDate   DateTime @map("booking_date") @db.Date
+  startTime     DateTime @map("start_time") @db.Time
+  endTime       DateTime @map("end_time") @db.Time
+  status        String   @default("confirmed") @map("status") 
+  customerNotes String?  @map("customer_notes")
+  providerNotes String?  @map("provider_notes")
+  totalPrice    Decimal  @map("total_price") @db.Decimal(10, 2)
+  emailSent     Boolean  @default(false) @map("email_sent")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  customer User    @relation("CustomerBooking", fields: [customerId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  company  Company @relation("CompanyBooking", fields: [companyId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@map("bookings")
+}
